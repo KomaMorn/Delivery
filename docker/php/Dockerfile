@@ -1,5 +1,6 @@
 FROM php:8.3-fpm-alpine
 
+# install packages
 RUN apk update && apk upgrade \
  && apk add --no-cache \
     git \
@@ -29,17 +30,33 @@ RUN apk update && apk upgrade \
     bcmath \
     xml
 
-RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS
-RUN apk add --update linux-headers
-RUN pecl install xdebug-3.3.2
-RUN docker-php-ext-enable xdebug
-RUN apk del -f .build-deps
+# install xdebug
+RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
+ && apk add --update linux-headers \
+ && pecl install xdebug-3.3.2 \
+ && docker-php-ext-enable xdebug \
+ && apk del -f .build-deps
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-RUN curl -sS https://get.symfony.com/cli/installer | bash && mv /root/.symfony5/bin/symfony /usr/local/bin/symfony
+# install symfony cli and composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
+ && curl -sS https://get.symfony.com/cli/installer | bash && mv /root/.symfony5/bin/symfony /usr/local/bin/symfony
 
+# configure xdebug.ini
 RUN echo "xdebug.mode=debug" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
  && echo "xdebug.client_host=host.docker.internal" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
  && echo "xdebug.client_port=9003" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
  && echo "xdebug.idekey=PHPSTORM" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
  && echo "xdebug.start_with_request=yes" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+
+# configure non-root user
+ARG PUID=1000
+ARG PGID=1000
+RUN apk --no-cache add shadow \
+ && groupmod -o -g ${PGID} www-data \
+ && usermod -o -u ${PUID} -g www-data www-data
+
+# source code
+COPY ./ /var/www/html
+WORKDIR /var/www/html
+
+USER www-data

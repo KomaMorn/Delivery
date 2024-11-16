@@ -1,4 +1,4 @@
-/.env.local
+/.env.db.local
 /.env.local.php
 /.env.*.local
 /config/secrets/prod/prod.decrypt.private.php

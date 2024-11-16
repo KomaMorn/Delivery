@@ -2,7 +2,12 @@ services:
 
   php:
     container_name: delivery-php
-    build: ./docker/php
+    build:
+      context: ./
+      dockerfile: ./docker/php/Dockerfile
+      args:
+        - PUID=${PUID}
+        - PGID=${PGID}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -28,8 +33,6 @@ services:
     restart: always
     ports:
       - 5432:5432
-    env_file:
-      - .env
     environment:
       - POSTGRES_DB=${DB_DATABASE}
       - POSTGRES_USER=${DB_USERNAME}
